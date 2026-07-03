@@ -1,0 +1,32 @@
+services:
+  chromium:
+    image: lscr.io/linuxserver/chromium:latest
+    container_name: headless-chromium
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Guayaquil
+      - CUSTOM_USER=eric
+      # Password comes from .env (gitignored). Authoritative copy lives in
+      # ~/.headless-chromium-webpass.txt for the human to read.
+      - PASSWORD=${CHROMIUM_PASSWORD:?set CHROMIUM_PASSWORD in .env (see ~/.headless-chromium-webpass.txt)}
+      - TITLE=Headless Chromium
+      # Opens NotebookLM by default on startup; remote debugging enabled on 9222.
+      - CHROME_CLI=--remote-debugging-port=9222 --remote-allow-origins=* --no-sandbox https://notebooklm.google.com
+    volumes:
+      - /home/ericmaster/.headless-chromium-config:/config
+    ports:
+      # KasmVNC web interface (HTTPS only) for visual access / shared debugging.
+      - "127.0.0.1:3011:3001"
+      # Host 9222 -> bridge 9223 (socat) -> Chromium's loopback 9222 (see cdp-bridge).
+      - "127.0.0.1:9222:9223"
+    restart: unless-stopped
+
+  cdp-bridge:
+    image: alpine/socat
+    container_name: headless-chromium-cdp-bridge
+    network_mode: service:chromium
+    # Chromium binds --remote-debugging-port to 127.0.0.1 inside the namespace, so a
+    # plain port map can't reach it. socat listens on 9223 and forwards to 127.0.0.1:9222.
+    command: -d -d TCP-LISTEN:9223,fork,reuseaddr TCP:127.0.0.1:9222
+    restart: unless-stopped
