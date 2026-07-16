@@ -15,7 +15,7 @@ The browser runs as a shared persistent container service with:
   * **Password**: read it from `~/.headless-chromium-webpass.txt` (not stored in this repo)
 
 ## ⚠️ This browser is SHARED — etiquette
-A human and the NotebookLM keepalive use this same browser. Automation must never disturb tabs it does not own:
+A human and other agents/automated jobs use this same browser. Automation must never disturb tabs it does not own:
 * **Always open your own tab** with `context.newPage()` / `browser.newPage()`. **Never** operate on `contexts()[0].pages()[0]` — that is someone else's live tab, and `page.goto()` on it hijacks their session.
 * **Close only the page(s) you created**, then disconnect.
 * Over a `connectOverCDP` connection, `browser.close()` only clears *your* contexts and disconnects; the remote Chrome and the human's tabs keep running. It is safe — closing the human's tabs is not.
@@ -27,7 +27,7 @@ A human and the NotebookLM keepalive use this same browser. Automation must neve
 Before connecting, verify the docker containers are active. If not, start them:
 ```bash
 cd /home/ericmaster/tools/headless-chromium
-docker compose up -d
+./start.sh
 ```
 
 ### 2. Connect via Playwright (Node.js / TypeScript)

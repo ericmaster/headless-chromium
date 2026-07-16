@@ -9,7 +9,7 @@ Because it's one long-lived browser, logged-in sessions (Google, etc.) persist a
 
 ## Why
 
-Automating logged-in web apps usually means either re-authenticating on every run or copying cookies around. This tool keeps a single authenticated browser alive so agents can attach on demand, while a human retains visual access and manual control when a flow needs a real person. It also backs a NotebookLM auth keepalive that re-extracts Google cookies over CDP.
+Automating logged-in web apps usually means either re-authenticating on every run or copying cookies around. This tool keeps a single authenticated browser alive so agents can attach on demand, while a human retains visual access and manual control when a flow needs a real person.
 
 ## Stack
 
@@ -22,13 +22,17 @@ Automating logged-in web apps usually means either re-authenticating on every ru
 
 ## Quick start
 
-```bash
-# 1. Set the KasmVNC web password (never commit this)
-echo "CHROMIUM_PASSWORD=<your-password>" > .env
+The KasmVNC web password (`CHROMIUM_PASSWORD`) can come from either source, tried in that order:
 
-# 2. Launch
-docker compose up -d
+1. **Infisical** — set `INFISICAL_PROJECT_ID=<uuid>` in `.env` (secret name `CHROMIUM_PASSWORD`). Auth credentials (`INFISICAL_CLIENT_ID`/`INFISICAL_CLIENT_SECRET`/`INFISICAL_API_URL`) come from the host's global profile, not this repo — see [AGENTS.md](AGENTS.md).
+2. **Plain `.env`** — set `CHROMIUM_PASSWORD=<your-password>` directly in `.env` (gitignored). Used if Infisical isn't configured, or as a fallback if the fetch fails.
+
+```bash
+# Either populate .env as above, then:
+./start.sh
 ```
+
+`start.sh` resolves the password (Infisical or `.env`) and runs `docker compose up -d`. You can still run `docker compose up -d` directly if `CHROMIUM_PASSWORD` is already exported or set in `.env`.
 
 Then open the web UI at `https://127.0.0.1:3011` (user `eric`), or connect an agent:
 
@@ -51,13 +55,13 @@ Stop with `docker compose down`. The Google login and other session state persis
 
 ## Shared-browser etiquette
 
-This browser is shared. **Always open your own tab (`context.newPage()`) and close only what you opened** — never grab `pages()[0]`, which belongs to the human (or the keepalive) and hijacks their session.
+This browser is shared. **Always open your own tab (`context.newPage()`) and close only what you opened** — never grab `pages()[0]`, which belongs to the human or to another agent's in-flight session, and hijacking it steals that session.
 
 ## Security
 
 - **The CDP port (`9222`) has NO authentication** — anyone who reaches it gets full control of a browser holding live logins. Keep it **loopback-only**; never tunnel, proxy, or publish it.
 - The KasmVNC web UI (`3011`) is loopback-bound and reached externally only through a Cloudflare Tunnel + Access.
-- Secrets live in `.env` (gitignored). Nothing sensitive is committed.
+- The KasmVNC password comes from Infisical or `.env` (gitignored) — see Quick start. Nothing sensitive is committed.
 
 ## More
 

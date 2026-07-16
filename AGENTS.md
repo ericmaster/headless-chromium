@@ -2,7 +2,7 @@
 
 This tool manages a self-hosted Headless Chromium instance running in a Docker container with KasmVNC visual access and an exposed Chrome DevTools Protocol (CDP) port.
 
-It is designed to serve as a **shared browser between human operators and AI agents**: agents connect headlessly via Playwright/Puppeteer/CDP on port `9222`, while humans visually monitor or take control of the same session on port `3011`. It also backs the NotebookLM headless-auth keepalive (`~/.notebooklm-mcp-cli/keepalive.py`), which re-extracts Google cookies from this browser over CDP.
+It is designed to serve as a **shared browser between human operators and AI agents**: agents connect headlessly via Playwright/Puppeteer/CDP on port `9222`, while humans visually monitor or take control of the same session on port `3011`. Any agent or automated job needing a real, logged-in browser (auth keepalives, scraping, UI verification, etc.) can attach here rather than standing up its own Chromium instance.
 
 ## Stack
 - **Docker Image**: `lscr.io/linuxserver/chromium:latest`
@@ -12,7 +12,10 @@ It is designed to serve as a **shared browser between human operators and AI age
 
 ## Credentials
 - **Username**: `eric`
-- **Password**: not stored here. Runtime value is in `.env` (`CHROMIUM_PASSWORD`, gitignored); the human-readable copy is `~/.headless-chromium-webpass.txt`. To rotate, change both, then `docker compose up -d` to recreate.
+- **Password**: not stored here. Resolved by `scripts/resolve-password.sh` (sourced by `start.sh`) from either:
+  1. **Infisical** — `.env` sets `INFISICAL_PROJECT_ID`; secret name `CHROMIUM_PASSWORD`. Auth (`INFISICAL_CLIENT_ID`/`INFISICAL_CLIENT_SECRET`/`INFISICAL_API_URL`) comes from the host's global profile (`/etc/profile.d/nimblerbox-secrets.sh`), same as every other project — never put those in this repo's `.env`. See the `infisical` / `container-secret-injection` skills for the underlying pattern.
+  2. **Plain `.env`** — `CHROMIUM_PASSWORD` set directly (gitignored). Used if Infisical isn't configured, or as a fallback if the fetch fails.
+- Either way, the resolved value is written to `~/.headless-chromium-webpass.txt` for the human to read, and exported for `docker compose`'s `${CHROMIUM_PASSWORD}` substitution. To rotate: update the source (Infisical secret or `.env`), then `./start.sh` to recreate.
 - Cloudflare Access (`eric@nimblersoft.com`) gates the public hostname; the KasmVNC basic-auth password above is a second factor and is independent of CF Access SSO.
 
 ## Security / trust boundary (read before exposing anything)
@@ -20,7 +23,7 @@ It is designed to serve as a **shared browser between human operators and AI age
 - KasmVNC (3011) is loopback-only on the host and reached externally solely through the Cloudflare Tunnel + Access app.
 
 ## Shared-browser etiquette (IMPORTANT)
-This browser is shared with a human and with the NotebookLM keepalive. Automation must never disturb tabs it does not own:
+This browser is shared between a human and multiple agents/automated jobs. Automation must never disturb tabs it does not own:
 - **Always create your own page** (`context.newPage()` / `browser.newPage()`). **Never** grab `contexts()[0].pages()[0]` — that is the human's (or keepalive's) live tab, and navigating it hijacks their session.
 - **Close only the page(s) you created**, then disconnect.
 - Over a `connectOverCDP` connection, Playwright's `browser.close()` only clears *your* contexts and disconnects — the remote Chrome (and the human's tabs) keep running. Puppeteer's `browser.disconnect()` is the equivalent. Either is safe; closing the human's tabs is not.
@@ -50,5 +53,5 @@ try {
 ```
 
 ## Management
-Start: `docker compose up -d` · Stop: `docker compose down`
+Start: `./start.sh` (resolves `CHROMIUM_PASSWORD` then `docker compose up -d`) · Stop: `docker compose down`
 (Recreating the container closes current tabs, but the Google login persists in the `/config` volume at `~/.headless-chromium-config`.)

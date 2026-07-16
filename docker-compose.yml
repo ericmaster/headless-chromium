@@ -9,10 +9,10 @@ services:
       - CUSTOM_USER=eric
       # Password comes from .env (gitignored). Authoritative copy lives in
       # ~/.headless-chromium-webpass.txt for the human to read.
-      - PASSWORD=${CHROMIUM_PASSWORD:?set CHROMIUM_PASSWORD in .env (see ~/.headless-chromium-webpass.txt)}
+      - PASSWORD=${CHROMIUM_PASSWORD:?run ./start.sh, or set CHROMIUM_PASSWORD in .env (see ~/.headless-chromium-webpass.txt)}
       - TITLE=Headless Chromium
-      # Opens NotebookLM by default on startup; remote debugging enabled on 9222.
-      - CHROME_CLI=--remote-debugging-port=9222 --remote-allow-origins=* --no-sandbox https://notebooklm.google.com
+      # Remote debugging enabled on 9222; no default start URL — agents/humans navigate their own tabs.
+      - CHROME_CLI=--remote-debugging-port=9222 --remote-allow-origins=* --no-sandbox
     volumes:
       - /home/ericmaster/.headless-chromium-config:/config
     ports:
