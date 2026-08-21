@@ -12,10 +12,8 @@ It is designed to serve as a **shared browser between human operators and AI age
 
 ## Credentials
 - **Username**: `eric`
-- **Password**: not stored here. Resolved by `scripts/resolve-password.sh` (sourced by `start.sh`) from either:
-  1. **Infisical** — `.env` sets `INFISICAL_PROJECT_ID`; secret name `CHROMIUM_PASSWORD`. Auth (`INFISICAL_CLIENT_ID`/`INFISICAL_CLIENT_SECRET`/`INFISICAL_API_URL`) comes from the host's global profile (`/etc/profile.d/nimblerbox-secrets.sh`), same as every other project — never put those in this repo's `.env`. See the `infisical` / `container-secret-injection` skills for the underlying pattern.
-  2. **Plain `.env`** — `CHROMIUM_PASSWORD` set directly (gitignored). Used if Infisical isn't configured, or as a fallback if the fetch fails.
-- Either way, the resolved value is written to `~/.headless-chromium-webpass.txt` for the human to read, and exported for `docker compose`'s `${CHROMIUM_PASSWORD}` substitution. To rotate: update the source (Infisical secret or `.env`), then `./start.sh` to recreate.
+- **Password**: not stored here. Resolved by `scripts/resolve-password.sh` (sourced by `start.sh`) via `load-secrets`, using the project ID in `.infisical.env` and the `CHROMIUM_PASSWORD` secret. Auth comes from the host's global Infisical configuration — never put credentials in this repo.
+- The resolved value is written to `~/.headless-chromium-webpass.txt` for the human to read, and exported for `docker compose`'s `${CHROMIUM_PASSWORD}` substitution. To rotate: update the Infisical secret, then `./start.sh` to recreate.
 - Cloudflare Access (`eric@nimblersoft.com`) gates the public hostname; the KasmVNC basic-auth password above is a second factor and is independent of CF Access SSO.
 
 ## Security / trust boundary (read before exposing anything)
