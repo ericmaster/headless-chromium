@@ -53,3 +53,11 @@ try {
 ## Management
 Start: `./start.sh` (resolves `CHROMIUM_PASSWORD` then `docker compose up -d`) · Stop: `docker compose down`
 (Recreating the container closes current tabs, but the Google login persists in the `/config` volume at `~/.headless-chromium-config`.)
+
+## Documentation lifecycle
+
+Keep specs and other non-ADR docs current-state only; do not use them as changelogs, timelines,
+release notes, or historical change logs. Before release, ADRs may be edited, merged, or
+squashed to retain the latest decision; after release, preserve published ADRs and record later
+decisions in a new superseding ADR. Apply the `context-hygiene` skill before documentation or
+spec writes; link each fact to its SSOT instead of duplicating it.
